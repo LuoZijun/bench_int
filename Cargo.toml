@@ -1,0 +1,13 @@
+[package]
+name = "bench_int"
+version = "0.1.0"
+authors = ["luozijun <luozijun.assistant@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+num-bigint = { git = "https://github.com/rust-num/num-bigint" }
+rug = { version = "1.8.0", default-features = false, features = ["integer"] }
+bls12_381 = { version = "0.1", features = ["groups", "pairings", "alloc", "nightly"] }
+fff = { path = "./fff" }
