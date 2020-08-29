@@ -57,7 +57,7 @@ pub fn mod_mul_4w_assign(a: &mut [u64; 4], b: &[u64; 4]) {
 // #[PrimeFieldModulus = "52435875175126190479447740508185965837690552500527637822603658699938581184513"]
 // #[PrimeFieldGenerator = "7"]
 #[derive(Copy, Clone, PartialEq, Eq, Default)]
-pub struct Fr(FrRepr);
+pub struct Fr(pub FrRepr);
 
 /// This is the modulus m of the prime field
 pub const MODULUS: FrRepr = FrRepr([
@@ -220,17 +220,29 @@ impl FrRepr {
     #[inline(always)]
     pub fn add_nocarry(&mut self, other: &FrRepr) {
         let mut carry = 0;
-        for (a, b) in self.0.iter_mut().zip(other.0.iter()) {
-            *a = adc(*a, *b, &mut carry);
-        }
+
+        self.0[0] = adc(self.0[0], other.0[0], &mut carry);
+        self.0[1] = adc(self.0[1], other.0[1], &mut carry);
+        self.0[2] = adc(self.0[2], other.0[2], &mut carry);
+        self.0[3] = adc(self.0[3], other.0[3], &mut carry);
+
+        // for (a, b) in self.0.iter_mut().zip(other.0.iter()) {
+        //     *a = adc(*a, *b, &mut carry);
+        // }
     }
 
     #[inline(always)]
     pub fn sub_noborrow(&mut self, other: &FrRepr) {
         let mut borrow = 0;
-        for (a, b) in self.0.iter_mut().zip(other.0.iter()) {
-            *a = sbb(*a, *b, &mut borrow);
-        }
+
+        self.0[0] = sbb(self.0[0], other.0[0], &mut borrow);
+        self.0[1] = sbb(self.0[1], other.0[1], &mut borrow);
+        self.0[2] = sbb(self.0[2], other.0[2], &mut borrow);
+        self.0[3] = sbb(self.0[3], other.0[3], &mut borrow);
+
+        // for (a, b) in self.0.iter_mut().zip(other.0.iter()) {
+        //     *a = sbb(*a, *b, &mut borrow);
+        // }
     }
 }
 
@@ -382,12 +394,10 @@ impl Fr {
             let mut carry = _addcarry_u64(0, (self.0).0[0], (other.0).0[0], &mut (self.0).0[0]);
             carry = _addcarry_u64(carry, (self.0).0[1], (other.0).0[1], &mut (self.0).0[1]);
             carry = _addcarry_u64(carry, (self.0).0[2], (other.0).0[2], &mut (self.0).0[2]);
-            _addcarry_u64(carry, (self.0).0[3], (other.0).0[3], &mut (self.0).0[3]);
+                    _addcarry_u64(carry, (self.0).0[3], (other.0).0[3], &mut (self.0).0[3]);
 
-            #[allow(deprecated)]
-            let mut s_sub: [u64; 4] = std::mem::uninitialized();
-
-            carry = _subborrow_u64(0, (self.0).0[0], MODULUS.0[0], &mut s_sub[0]);
+            let mut s_sub: [u64; 4] = [0u64; 4];
+            carry = _subborrow_u64(    0, (self.0).0[0], MODULUS.0[0], &mut s_sub[0]);
             carry = _subborrow_u64(carry, (self.0).0[1], MODULUS.0[1], &mut s_sub[1]);
             carry = _subborrow_u64(carry, (self.0).0[2], MODULUS.0[2], &mut s_sub[2]);
             carry = _subborrow_u64(carry, (self.0).0[3], MODULUS.0[3], &mut s_sub[3]);
@@ -583,40 +593,46 @@ impl Fr {
     #[inline(always)]
     pub fn mont_reduce(&mut self, r0: u64, mut r1: u64, mut r2: u64, mut r3: u64, mut r4: u64, mut r5: u64, mut r6: u64, mut r7: u64) {
         let k = r0.wrapping_mul(INV);
+
         let mut carry = 0;
-        mac_with_carry(r0, k, MODULUS.0[0], &mut carry);
+             mac_with_carry(r0, k, MODULUS.0[0],      &mut carry);
         r1 = mac_with_carry(r1, k, MODULUS.0[1usize], &mut carry);
         r2 = mac_with_carry(r2, k, MODULUS.0[2usize], &mut carry);
         r3 = mac_with_carry(r3, k, MODULUS.0[3usize], &mut carry);
         r4 = adc(r4, 0, &mut carry);
+        
         let carry2 = carry;
         let k = r1.wrapping_mul(INV);
         let mut carry = 0;
-        mac_with_carry(r1, k, MODULUS.0[0], &mut carry);
+             mac_with_carry(r1, k, MODULUS.0[0],      &mut carry);
         r2 = mac_with_carry(r2, k, MODULUS.0[1usize], &mut carry);
         r3 = mac_with_carry(r3, k, MODULUS.0[2usize], &mut carry);
         r4 = mac_with_carry(r4, k, MODULUS.0[3usize], &mut carry);
         r5 = adc(r5, carry2, &mut carry);
+
         let carry2 = carry;
         let k = r2.wrapping_mul(INV);
         let mut carry = 0;
-        mac_with_carry(r2, k, MODULUS.0[0], &mut carry);
+             mac_with_carry(r2, k, MODULUS.0[0],      &mut carry);
         r3 = mac_with_carry(r3, k, MODULUS.0[1usize], &mut carry);
         r4 = mac_with_carry(r4, k, MODULUS.0[2usize], &mut carry);
         r5 = mac_with_carry(r5, k, MODULUS.0[3usize], &mut carry);
         r6 = adc(r6, carry2, &mut carry);
+        
         let carry2 = carry;
         let k = r3.wrapping_mul(INV);
         let mut carry = 0;
-        mac_with_carry(r3, k, MODULUS.0[0], &mut carry);
+             mac_with_carry(r3, k, MODULUS.0[0],      &mut carry);
         r4 = mac_with_carry(r4, k, MODULUS.0[1usize], &mut carry);
         r5 = mac_with_carry(r5, k, MODULUS.0[2usize], &mut carry);
         r6 = mac_with_carry(r6, k, MODULUS.0[3usize], &mut carry);
         r7 = adc(r7, carry2, &mut carry);
+        
         (self.0).0[0usize] = r4;
         (self.0).0[1usize] = r5;
         (self.0).0[2usize] = r6;
         (self.0).0[3usize] = r7;
+
         self.reduce();
     }
 
